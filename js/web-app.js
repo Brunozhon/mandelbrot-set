@@ -94,4 +94,100 @@ class PageState {
   }
 }
 
+const ROWS = 3, COLS = 4, NUMWORKERS = navigator.hardwareConcurrency || 3;
+
+class MandelbrotCanvas {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.context = canvas.getContext("2d");
+    this.workerPool = new WorkerPool(NUMWORKERS, "worker.js");
+    this.tiles = null;
+    this.pendingRender = null;
+    this.wantsRerender = false;
+    this.resizeTimer = null;
+    this.colorTable = null;
+    this.state = PageState.fromURL(window.location) || PageState.initialState();
+    
+    history.replaceState(this.state, "", this.state.toURL())
+    
+    this.setSize();
+    this.render();
+  }
+  
+  setSize() {
+    this.width = this.canvas.width = window.innerWidth;
+    this.height = this.canvas.height = window.innerHeight;
+    this.tiles = [...Tile.tiles(this.width, this.height, ROWS, COLS)];
+  }
+  
+  setState(f, save=true) {
+    if (typeof f === "function") {
+      f(this.state);
+    } else {
+      for (let property in f) {
+        this.state[property] = f[property];
+      }
+    }
+    
+    this.render();
+    
+    if (save) {
+      history.pushState(this.state, "", this.state.toURL())
+    }
+  }
+  
+  render() {
+    if (this.pendingRender) {
+      this.wantsRerender = true;
+      return;
+    }
+    
+    let {cx, cy, perPixel, maxIterations} = this.state;
+    let x0 = cx - perPixel * this.width / 2;
+    let y0 = cy - perPixel * this.height / 2;
+    
+    let promises = this.tiles.map(tile => this.workerPool.addWork({
+      tile: tile,
+      x0: x0 + tile.x * perPixel,
+      y0: y0 + tile.y * perPixel,
+      perPixel: perPixel,
+      maxIterations: maxIterations
+    }));
+    
+    this.pendingRender = Promise.all(promises).then(responses => {
+      let min = maxIterations, max = 0;
+      for (let r of responses) {
+        if (r.min < min) min = r.min;
+        if (r.max < max) max = r.max;
+      }
+      
+      if (!this.colorTable || this.colorTable.length !== maxIterations + 1) {
+        this.colorTable = new Uint32Array(maxIterations + 1);
+      }
+      
+      if (min === max) {
+        if (min === maxIterations) {
+          this.colorTable[min] = 0xFF000000;
+        } else {
+          this.colorTable[min] = 0;
+        }
+      } else {
+        let maxlog = Math.log(1 + max - min)
+        for (let i = min, i <= max, i++) {
+          this.colorTable[i] = Math.ceil(Math.log(1 + i - min) / maxLog * 255) << 24;
+        }
+      }
+      
+      for (let r of responses) {
+        let iterations = new Uint32Array(r.imageData.data.buffer);
+        for (let i = 0; i < iterations.length; i++) {
+          iterations[i] = this.colorTable[iterations[i]];
+        }
+      }
+      
+      // TODO!
+    })
+  }
+}
+
 // TODO: MandelbrotCanvas
