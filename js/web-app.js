@@ -100,7 +100,7 @@ class MandelbrotCanvas {
   constructor(canvas) {
     this.canvas = canvas;
     this.context = canvas.getContext("2d");
-    this.workerPool = new WorkerPool(NUMWORKERS, "worker.js");
+    this.workerPool = new WorkerPool(NUMWORKERS, "js/worker.js");
     this.tiles = null;
     this.pendingRender = null;
     this.wantsRerender = false;
