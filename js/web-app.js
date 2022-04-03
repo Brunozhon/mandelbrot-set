@@ -185,9 +185,58 @@ class MandelbrotCanvas {
         }
       }
       
-      // TODO!
+      this.canvas.style.transform = "";
+      for (let r of responses) {
+        this.context.putImageData(r.imageData, r.tile.x, r.tile.y);
+      }
     })
+    .catch((reason) => {
+      console.error("Promise rejected when rendering:", reason)
+    })
+    .finally(() => {
+      this.pendingRender = null;
+      if (this.wantsRerender) {
+        this.wantsRerender = false;
+        this.render();
+      }
+    });
+  }
+  
+  handleResize(event) {
+    if (this.resizeTimer) clearTimeout(this.resizeTimer);
+    this.resizeTimer = setTimeout(() => {
+      this.resizeTimer = null;
+      this.setSize();
+      this.render();
+    }, 200)
+  }
+  
+  handleKey(event) {
+    switch(event.key) {
+      case "Escape":
+        this.setState(PageState.initialState());
+        break;
+      case "+":
+        this.setState(s => {
+          s.perPixel /= 2;
+          if (s.perPixel < 1) s.perPixel = 1
+        });
+        break;
+      case "-":
+        this.setState(s => s.perPixel *= 2);
+        break;
+      case "ArrowUp":
+        this.setState(s => s.cy -= this.height / 10 * s.perPixel)
+        break;
+      case "ArrowDown":
+        this.setState(s => s.cy += this.height / 10 * s.perPixel)
+        break;
+      case "ArrowLeft":
+        this.setState(s => s.cx -= this.width / 10 * s.perPixel)
+        break;
+      case "ArrowRight":
+        this.setState(s => s.cx += this.width / 10 * s.perPixel)
+        break;
+    }
   }
 }
-
-// TODO: MandelbrotCanvas
