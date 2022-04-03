@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+  <head>
+    <title>The Mandelbrot Set</title>
+  </head>
+  <body>
+    <noscript>Sorry, the Mandelbrot Set requires JavaScript.</noscript>
+    <script src="js/web-app.js"></script>
+    <script>
+      let canvas = document.createElement("canvas");
+      document.body.append(canvas);
+      document.body.style = "margin: 0";
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
+      new MandelbrotCanvas(canvas);
+    </script>
+  </body>
+</html>
