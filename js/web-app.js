@@ -173,7 +173,7 @@ class MandelbrotCanvas {
         }
       } else {
         let maxlog = Math.log(1 + max - min)
-        for (let i = min, i <= max, i++) {
+        for (let i = min; i <= max; i++) {
           this.colorTable[i] = Math.ceil(Math.log(1 + i - min) / maxLog * 255) << 24;
         }
       }
